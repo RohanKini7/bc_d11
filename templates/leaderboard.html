@@ -16,7 +16,7 @@
       margin-bottom: 30px;
     }
     table {
-      width: 80%;
+      width: 90%;
       margin: 0 auto;
       border-collapse: collapse;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
@@ -48,6 +48,10 @@
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       text-align: left;
     }
+    .recent {
+      font-size: 0.9em;
+      color: #666;
+    }
   </style>
 </head>
 <body>
@@ -59,12 +63,24 @@
       <th>Rank</th>
       <th>Player</th>
       <th>Total Score</th>
+      <th>Wins</th>
+      <th>Podiums</th>
+      <th>Bottom 3</th>
+      <th>Recent Games</th>
     </tr>
     {% for entry in leaderboard %}
       <tr class="{% if loop.index == 1 %}gold{% elif loop.index == 2 %}silver{% elif loop.index == 3 %}bronze{% endif %}">
         <td>{{ loop.index }}</td>
         <td>{{ entry.Player }}</td>
         <td>{{ entry.Total_Score }}</td>
+        <td>{{ entry.Wins }}</td>
+        <td>{{ entry.Podiums }}</td>
+        <td>{{ entry.Bottom3 }}</td>
+        <td class="recent">
+          {% for score in entry.Recent_Scores %}
+            {{ score }}{% if not loop.last %}, {% endif %}
+          {% endfor %}
+        </td>
       </tr>
     {% endfor %}
   </table>
