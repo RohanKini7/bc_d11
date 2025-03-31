@@ -1,4 +1,3 @@
 pandas
 Flask
-openpyxl
-psycopg2
+supabase
