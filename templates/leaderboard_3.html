@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Banter Cave D11 Leaderboard</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', 'Arial', sans-serif;
+      /* background: linear-gradient(to right, #f5f7fa, #c3cfe2); */
+      color: #333;
+      text-align: center;
+      padding: 30px;
+    }
+
+    .title-wrapper {
+      margin-bottom: 40px;
+    }
+
+    h1 {
+      font-size: 3em;
+      color: #2c3e50;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+      margin: 0;
+    }
+
+    .highlight {
+      color: #e67e22;
+    }
+
+    .subtitle {
+      font-size: 1.2em;
+      color: #555;
+      margin-top: 10px;
+      font-style: italic;
+    }
+
+    table {
+      width: 95%;
+      max-width: 1200px;
+      margin: 0 auto;
+      border-collapse: separate;
+      border-spacing: 0;
+      background-color: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    th, td {
+      padding: 16px;
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 0.95em;
+    }
+
+    th {
+      /* background-color: #2c3e50; */
+      background-color: #405367;
+      color: white;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    .circle {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      line-height: 28px;
+      border-radius: 50%;
+      text-align: center;
+      margin: 0 4px;
+      color: white;
+      font-size: 0.85em;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .green { background-color: #27ae60; }
+    .blue  { background-color: #2980b9; }
+    .red   { background-color: #c0392b; }
+
+    .recent {
+      font-size: 0.85em;
+    }
+
+    .formula {
+      margin-top: 50px;
+      background-color: #ffffffd9;
+      padding: 20px;
+      border-radius: 12px;
+      width: 93%;
+      max-width: 1170px;
+      margin-left: auto;
+      margin-right: auto;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      text-align: left;
+      font-size: 0.95em;
+    }
+    
+    .h2{
+        text-align: center;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="title-wrapper">
+    <h1><span class="highlight">Banter Cave</span> D11 Leaderboard </h1>
+    <p class="subtitle">Winning is luck. Jinxing is skill. </p>
+  </div>
+
+  <table>
+    <tr>
+      <th>Rank</th>
+      <th>Player</th>
+      <th>Total Score</th>
+      <th>Wins</th>
+      <th>Podiums</th>
+      <th>Bottom 3</th>
+      <th>Last 5</th>
+    </tr>
+    {% for entry in leaderboard %}
+      <tr class="{% if loop.index == 1 %}gold{% elif loop.index == 2 %}silver{% elif loop.index == 3 %}bronze{% endif %}">
+        <td>
+          {% if loop.index == 1 %} 🥇 {% elif loop.index == 2 %} 🥈 {% elif loop.index == 3 %} 🥉 {% else %} {{ loop.index }} {% endif %}
+        </td>
+        <td><strong>{{ entry.Player }}</strong></td>
+        <td>{{ entry.Total_Score }}</td>
+        <td>{{ entry.Wins }}</td>
+        <td>{{ entry.Podiums }}</td>
+        <td>{{ entry.Bottom3 }}</td>
+        <td class="recent">
+          {% for pos in entry.Recent_Positions %}
+            {% set inner_loop = loop %}
+            <span class="circle 
+              {% if pos in [1, 2, 3] %}green
+              {% elif pos in [11, 12, 13, 14] %}red
+              {% else %}blue
+              {% endif %}
+            ">{{ pos }}</span>{% if not inner_loop.last %} {% endif %}
+          {% endfor %}
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+
+  <div class="formula">
+    <h2 class="h2">Scoring Formula</h2>
+  
+    <ul class="formula-list">
+      <li>
+        <strong>Normalized Score</strong> = 
+        <span class="math">(Player's Match Points / Top Scorer's Points) × 100</span>
+      </li>
+  
+      <li>
+        <strong>Podium Bonus</strong>:
+        <div class="bonus-grid">
+          <span>🥇 1st – 25 pts</span>
+          <span>🥈 2nd – 18 pts</span>
+          <span>🥉 3rd – 15 pts</span>
+          <span>4th – 12 pts</span>
+          <span>5th – 10 pts</span>
+          <span>6th – 8 pts</span>
+          <span>7th – 6 pts</span>
+          <span>8th – 4 pts</span>
+          <span>9th – 2 pts</span>
+          <span>10th – 1 pt</span>
+        </div>
+      </li>
+  
+      <li>
+        <strong>Total Score</strong> = Sum of (<em>Normalized Score</em> + <em>Podium Bonus</em>) across all matches
+      </li>
+  
+      <li class="note">
+        <em>Non-submitters are awarded 70% of the minimum scorer’s normalized score for the match.</em>
+      </li>
+    </ul>
+  </div>
+
+</body>
+</html>

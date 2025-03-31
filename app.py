@@ -7,7 +7,7 @@ app = Flask(__name__)
 def leaderboard():
     leaderboard_df = main(return_dataframe=True)
     leaderboard = leaderboard_df.to_dict(orient="records")
-    return render_template("leaderboard.html", leaderboard=leaderboard)
+    return render_template("leaderboard_3.html", leaderboard=leaderboard)
 
 if __name__ == "__main__":
     app.run(debug=True)
