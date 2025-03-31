@@ -10,7 +10,7 @@ def fetch_match_data():
     return pd.DataFrame(data)
 
 def process_wide_format(df):
-    df = df.replace({None: 0, np.nan: 0})  # Ensure missing values are zeros
+    df = df.replace({None: 0, np.nan: 0})  
     df = df.melt(id_vars=["Player"], var_name="Match", value_name="Points")
     return df
 
@@ -56,27 +56,34 @@ def update_leaderboard(df, leaderboard):
     min_score = df[df['Points'] > 0]['Points'].min() if not df[df['Points'] > 0].empty else 0
     penalty_score = round((min_score * 0.7 / df['Points'].max()) * 100, 2) if df['Points'].max() != 0 else 0
 
+    submitters_df = df[df['Points'] > 0].reset_index(drop=True)
+
     for i, row in df.iterrows():
         player = row['Player']
-        if row['Points'] == 0:
+        submitted = row['Points'] > 0
+
+        if not submitted:
             score = penalty_score
+            position = "DNS"
         else:
             score = round(row['Normalized'] + row['F1_bonus'], 2)
+            position = submitters_df[submitters_df['Player'] == player].index[0] + 1
 
         if player not in leaderboard:
             leaderboard[player] = create_player_record()
 
         leaderboard[player]['Total_Score'] += score
-        leaderboard[player]['Recent_Positions'].append(i + 1)
+        leaderboard[player]['Recent_Positions'].append(position)
         if len(leaderboard[player]['Recent_Positions']) > 5:
             leaderboard[player]['Recent_Positions'].pop(0)
 
-        if i == 0:
-            leaderboard[player]['Wins'] += 1
-        if i < 3:
-            leaderboard[player]['Podiums'] += 1
-        if i >= len(df) - 3:
-            leaderboard[player]['Bottom3'] += 1
+        if submitted:
+            if position == 1:
+                leaderboard[player]['Wins'] += 1
+            if position <= 3:
+                leaderboard[player]['Podiums'] += 1
+            if position > len(submitters_df) - 3:
+                leaderboard[player]['Bottom3'] += 1
 
     return leaderboard
 
@@ -112,4 +119,3 @@ def main(return_dataframe=False):
 
 if __name__ == "__main__":
     main()
-

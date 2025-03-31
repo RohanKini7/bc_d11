@@ -66,9 +66,9 @@
 
     .circle {
       display: inline-block;
-      width: 28px;
-      height: 28px;
-      line-height: 28px;
+      width: 32px;
+      height: 32px;
+      line-height: 32px;
       border-radius: 50%;
       text-align: center;
       margin: 0 4px;
@@ -81,6 +81,7 @@
     .green { background-color: #27ae60; }
     .blue  { background-color: #2980b9; }
     .red   { background-color: #c0392b; }
+    .yellow {background-color: #f1c40f; }
 
     .recent {
       font-size: 0.85em;
@@ -124,7 +125,6 @@
       <th>Last 5</th>
     </tr>
     {% for entry in leaderboard %}
-      <tr class="{% if loop.index == 1 %}gold{% elif loop.index == 2 %}silver{% elif loop.index == 3 %}bronze{% endif %}">
         <td>
           {% if loop.index == 1 %} 🥇 {% elif loop.index == 2 %} 🥈 {% elif loop.index == 3 %} 🥉 {% else %} {{ loop.index }} {% endif %}
         </td>
@@ -137,17 +137,24 @@
           {% for pos in entry.Recent_Positions %}
             {% set inner_loop = loop %}
             <span class="circle 
-              {% if pos in [1, 2, 3] %}green
-              {% elif pos in [11, 12, 13, 14] %}red
-              {% else %}blue
-              {% endif %}
-            ">{{ pos }}</span>{% if not inner_loop.last %} {% endif %}
+            {% if pos == 'DNS'%}yellow
+            {% elif pos in [1, 2, 3] %}green
+            {% elif pos in [11, 12, 13, 14] %}red
+            {% else %}blue
+            {% endif %}
+          ">{{ pos }}</span>{% if not inner_loop.last %} {% endif %}
           {% endfor %}
         </td>
       </tr>
     {% endfor %}
   </table>
-
+  <div class="legend" style="margin-top: 15px; font-size: 0.9em; color: #444;">
+    <strong>Legend:</strong>
+    <span class="circle green" title="Top 3 Finish">1</span> Top 3 &nbsp;
+    <span class="circle blue" title="Mid Table">4-10</span> Mid &nbsp;
+    <span class="circle red" title="Bottom 3 Finish">11+</span> Bottom 3 &nbsp;
+    <span class="circle yellow" title="Did Not Submit">DNS</span> Did Not Submit
+  </div>
   <div class="formula">
     <h2 class="h2">Scoring Formula</h2>
   
