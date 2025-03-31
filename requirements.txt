@@ -1,3 +1,4 @@
 pandas
 Flask
 supabase
+numpy
