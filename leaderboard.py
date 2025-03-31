@@ -1,25 +1,37 @@
 import pandas as pd
-import os
-from glob import glob
+from supabase import create_client
+import numpy as np
+from supabase_config import URL, KEY, TABLE
 
-data_folder = 'bc_d11/matches'
+def fetch_match_data():
+    supabase = create_client(URL, KEY)
+    response = supabase.table(TABLE).select("*").execute()
+    data = response.data
+    return pd.DataFrame(data)
 
-
-def get_match_files(folder):
-    return sorted(glob(os.path.join(folder, '*.xlsx')))
-
-
-def calculate_normalized_scores(df):
-    max_score = df['Points'].max()
-    df['Normalized'] = (df['Points'] / max_score) * 100
+def process_wide_format(df):
+    df = df.replace({None: 0, np.nan: 0})  # Ensure missing values are zeros
+    df = df.melt(id_vars=["Player"], var_name="Match", value_name="Points")
     return df
 
+def create_player_record():
+    return {
+        'Total_Score': 0,
+        'Wins': 0,
+        'Podiums': 0,
+        'Bottom3': 0,
+        'Recent_Positions': []
+    }
 
-def calculate_f1_bonus(df):
+def calculate_normalized_score(df):
+    max_score = df['Points'].max()
+    df['Normalized'] = (df['Points'] / max_score) * 100 if max_score != 0 else 0
+    return df
+
+def apply_f1_bonus(df):
     f1_points = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1]
-    df['F1_bonus'] = 0.0
-
     df = df.sort_values(by='Points', ascending=False).reset_index(drop=True)
+    df['F1_bonus'] = 0
 
     i = 0
     rank = 0
@@ -27,8 +39,8 @@ def calculate_f1_bonus(df):
         tied_score = df.loc[i, 'Points']
         tied_players = df[df['Points'] == tied_score]
         n_tied = len(tied_players)
-
-        bonus_sum = sum(f1_points[rank:rank + n_tied]) if rank + n_tied <= len(f1_points) else sum(f1_points[rank:])
+        bonus_slice = f1_points[rank:rank + n_tied]
+        bonus_sum = sum(bonus_slice) if bonus_slice else 0
         avg_bonus = bonus_sum / n_tied if n_tied > 0 else 0
 
         for j in range(i, i + n_tied):
@@ -40,48 +52,33 @@ def calculate_f1_bonus(df):
 
     return df
 
-
-def process_match(df):
-    df = calculate_normalized_scores(df)
-    df = calculate_f1_bonus(df)
-    df['Match_Score'] = (df['Normalized'] + df['F1_bonus']).round(2)
-    return df
-
-
-def create_player_record():
-    return {
-        'Total_Score': 0,
-        'Wins': 0,
-        'Podiums': 0,
-        'Bottom3': 0,
-        'Recent_Scores': []
-    }
-
-
 def update_leaderboard(df, leaderboard):
+    min_score = df[df['Points'] > 0]['Points'].min() if not df[df['Points'] > 0].empty else 0
+    penalty_score = round((min_score * 0.7 / df['Points'].max()) * 100, 2) if df['Points'].max() != 0 else 0
+
     for i, row in df.iterrows():
         player = row['Player']
-        score = row['Match_Score']
+        if row['Points'] == 0:
+            score = penalty_score
+        else:
+            score = round(row['Normalized'] + row['F1_bonus'], 2)
 
         if player not in leaderboard:
             leaderboard[player] = create_player_record()
 
         leaderboard[player]['Total_Score'] += score
-        leaderboard[player]['Recent_Scores'].append(score)
-        if len(leaderboard[player]['Recent_Scores']) > 5:
-            leaderboard[player]['Recent_Scores'].pop(0)
+        leaderboard[player]['Recent_Positions'].append(i + 1)
+        if len(leaderboard[player]['Recent_Positions']) > 5:
+            leaderboard[player]['Recent_Positions'].pop(0)
 
         if i == 0:
             leaderboard[player]['Wins'] += 1
-
         if i < 3:
             leaderboard[player]['Podiums'] += 1
-
         if i >= len(df) - 3:
             leaderboard[player]['Bottom3'] += 1
 
     return leaderboard
-
 
 def leaderboard_to_dataframe(leaderboard):
     return pd.DataFrame([
@@ -91,18 +88,19 @@ def leaderboard_to_dataframe(leaderboard):
             'Wins': data['Wins'],
             'Podiums': data['Podiums'],
             'Bottom3': data['Bottom3'],
-            'Recent_Scores': data['Recent_Scores']
+            'Recent_Positions': data['Recent_Positions']
         } for player, data in leaderboard.items()
     ]).sort_values(by='Total_Score', ascending=False)
 
-
 def main(return_dataframe=False):
+    raw_df = fetch_match_data()
+    long_df = process_wide_format(raw_df)
     leaderboard = {}
-    match_files = get_match_files(data_folder)
 
-    for file in match_files:
-        match_df = pd.read_excel(file)
-        match_df = process_match(match_df)
+    for match_name in long_df['Match'].unique():
+        match_df = long_df[long_df['Match'] == match_name].copy()
+        match_df = calculate_normalized_score(match_df)
+        match_df = apply_f1_bonus(match_df)
         leaderboard = update_leaderboard(match_df, leaderboard)
 
     leaderboard_df = leaderboard_to_dataframe(leaderboard)
@@ -112,6 +110,6 @@ def main(return_dataframe=False):
     else:
         print(leaderboard_df)
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
+

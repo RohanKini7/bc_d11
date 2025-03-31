@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Banter Cave 11 Leaderboard</title>
+  <title>Banter Cave D 11 Leaderboard</title>
   <style>
     body {
       font-family: 'Arial', sans-serif;
@@ -56,7 +56,7 @@
 </head>
 <body>
 
-  <h1>Banter Cave 11 Leaderboard</h1>
+  <h1>Banter Cave D11 Leaderboard</h1>
 
   <table>
     <tr>
@@ -66,10 +66,9 @@
       <th>Wins</th>
       <th>Podiums</th>
       <th>Bottom 3</th>
-      <th>Recent Games</th>
+      <th>Recent Positions</th>
     </tr>
-    {% for entry in leaderboard %}
-      <tr class="{% if loop.index == 1 %}gold{% elif loop.index == 2 %}silver{% elif loop.index == 3 %}bronze{% endif %}">
+    {% for entry in leaderboard %}      
         <td>{{ loop.index }}</td>
         <td>{{ entry.Player }}</td>
         <td>{{ entry.Total_Score }}</td>
@@ -77,9 +76,10 @@
         <td>{{ entry.Podiums }}</td>
         <td>{{ entry.Bottom3 }}</td>
         <td class="recent">
-          {% for score in entry.Recent_Scores %}
-            {{ score }}{% if not loop.last %}, {% endif %}
-          {% endfor %}
+          {% for pos in entry.Recent_Positions %}
+          {% set inner_loop = loop %}
+          {{ pos }}{% if not inner_loop.last %}, {% endif %}
+        {% endfor %}       
         </td>
       </tr>
     {% endfor %}
@@ -89,7 +89,7 @@
     <h2>Scoring Formula:</h2>
     <p><strong>Normalized Score for a given match</strong> = (Player's Match Points / Top Scorer's Points) × 100</p>
     <p><strong>Podium Bonus</strong>: 1st - 25 pts, 2nd - 18 pts, 3rd - 15 pts, 4th - 12 pts, 5th - 10 pts, 6th - 8 pts, 7th - 6 pts 8th - 4 pts, 9th - 2pts, 10th - 1pt</p>
-    <p><strong>Total Score</strong> = Sum of (Normalized Score + Podium Bonus) over all matches</p>
+    <p><strong>Total Score</strong> = Sum of (Normalized Score + Podium Bonus) over all matches. Non-submitters are assigned 70% of the minimum scorer’s normalized score.</p>
   </div>
 
 </body>

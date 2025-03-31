@@ -1,2 +1,4 @@
 pandas
 Flask
+openpyxl
+psycopg2

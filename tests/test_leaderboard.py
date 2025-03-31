@@ -1,55 +1,65 @@
 import pytest
 import pandas as pd
 from leaderboard import (
-    process_match,
-    create_player_record,
-    update_leaderboard,
-    leaderboard_to_dataframe
+    process_wide_format, calculate_normalized_score, apply_f1_bonus,
+    update_leaderboard, leaderboard_to_dataframe, main
 )
 
-# Sample test data to simulate a match
-def sample_df():
+@pytest.fixture
+def sample_wide_data():
     return pd.DataFrame({
-        'Player': ['A', 'B', 'C'],
-        'Points': [90, 80, 70]
+        "Player": ["A", "B", "C"],
+        "Match1": [100, 80, 60],
+        "Match2": [90, 70, 50]
     })
 
+@pytest.fixture
+def long_format_data():
+    return pd.DataFrame({
+        "Player": ["A", "B", "C"],
+        "Points": [100, 80, 60]
+    })
 
-def test_process_match():
-    df = sample_df()
-    result_df = process_match(df)
-    assert 'Normalized' in result_df.columns
-    assert 'F1_bonus' in result_df.columns
-    assert 'Match_Score' in result_df.columns
-    assert result_df['Match_Score'].max() == 125
+def test_process_wide_format(sample_wide_data: pd.DataFrame):
+    df_long = process_wide_format(sample_wide_data)
+    assert df_long.shape == (6, 3)
+    assert set(df_long.columns) == {"Player", "Match", "Points"}
 
+def test_calculate_normalized_score(long_format_data: pd.DataFrame):
+    df_norm = calculate_normalized_score(long_format_data)
+    assert "Normalized" in df_norm.columns
+    assert df_norm.loc[0, "Normalized"] == 100.0
+    assert df_norm.loc[2, "Normalized"] == 60.0
 
-def test_create_player_record():
-    record = create_player_record()
-    assert record['Total_Score'] == 0
-    assert record['Wins'] == 0
-    assert record['Podiums'] == 0
-    assert record['Bottom3'] == 0
-    assert isinstance(record['Recent_Scores'], list)
-
+def test_apply_f1_bonus():
+    df = pd.DataFrame({"Player": ["A", "B", "C"], "Points": [100, 100, 80]})
+    df = apply_f1_bonus(df)
+    assert "F1_bonus" in df.columns
+    assert df[df['Points'] == 100].iloc[0]['F1_bonus'] == 21.5  # (25+18)/2
+    assert df[df['Points'] == 80].iloc[0]['F1_bonus'] == 15
 
 def test_update_leaderboard():
-    df = process_match(sample_df())
+    df = pd.DataFrame({
+        "Player": ["A", "B", "C"],
+        "Normalized": [100, 80, 60],
+        "F1_bonus": [25, 18, 15]
+    })
     leaderboard = {}
-    leaderboard = update_leaderboard(df, leaderboard)
-    assert 'A' in leaderboard
-    assert leaderboard['A']['Total_Score'] > 0
-    assert leaderboard['A']['Wins'] == 1
-    assert leaderboard['C']['Bottom3'] == 1
-
+    updated = update_leaderboard(df, leaderboard)
+    assert updated["A"]["Total_Score"] == 125
+    assert updated["B"]["Wins"] == 0
+    assert updated["A"]["Wins"] == 1
+    assert updated["C"]["Bottom3"] == 1
 
 def test_leaderboard_to_dataframe():
-    df = process_match(sample_df())
-    leaderboard = update_leaderboard(df, {})
-    result_df = leaderboard_to_dataframe(leaderboard)
-    assert isinstance(result_df, pd.DataFrame)
-    assert 'Player' in result_df.columns
-    assert 'Wins' in result_df.columns
-    assert 'Podiums' in result_df.columns
-    assert 'Bottom3' in result_df.columns
-    assert 'Recent_Scores' in result_df.columns
+    leaderboard = {
+        "A": {"Total_Score": 125, "Wins": 1, "Podiums": 1, "Bottom3": 0, "Recent_Scores": [125]},
+        "B": {"Total_Score": 98, "Wins": 0, "Podiums": 1, "Bottom3": 0, "Recent_Scores": [98]},
+        "C": {"Total_Score": 75, "Wins": 0, "Podiums": 1, "Bottom3": 1, "Recent_Scores": [75]}
+    }
+    df = leaderboard_to_dataframe(leaderboard)
+    assert list(df.columns) == ["Player", "Total_Score", "Wins", "Podiums", "Bottom3", "Recent_Scores"]
+    assert df.iloc[0]["Player"] == "A"
+
+def test():
+    main(return_dataframe=False)

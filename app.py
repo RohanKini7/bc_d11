@@ -1,11 +1,13 @@
 from flask import Flask, render_template
-import leaderboard
+from leaderboard import main
+
 app = Flask(__name__)
 
-@app.route('/')
-def home():
-    leaderboard_data = leaderboard.main(return_dataframe=True)
-    return render_template('leaderboard.html', leaderboard=leaderboard_data.to_dict(orient='records'))
+@app.route("/")
+def leaderboard():
+    leaderboard_df = main(return_dataframe=True)
+    leaderboard = leaderboard_df.to_dict(orient="records")
+    return render_template("leaderboard.html", leaderboard=leaderboard)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
