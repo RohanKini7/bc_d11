@@ -56,7 +56,14 @@ def update_leaderboard(df, leaderboard):
     min_score = df[df['Points'] > 0]['Points'].min() if not df[df['Points'] > 0].empty else 0
     penalty_score = round((min_score * 0.7 / df['Points'].max()) * 100, 2) if df['Points'].max() != 0 else 0
 
-    submitters_df = df[df['Points'] > 0].reset_index(drop=True)
+    submitters_df = df[df['Points'] > 0].copy()
+    submitters_df['Score'] = submitters_df['Normalized'] + submitters_df['F1_bonus']
+
+    # Ranking: higher scores get lower rank (1st place = rank 1)
+    submitters_df['Rank'] = submitters_df['Score'].rank(method='min', ascending=False).astype(int)
+
+    # Create a mapping: player -> position
+    rank_map = dict(zip(submitters_df['Player'], submitters_df['Rank']))
 
     for i, row in df.iterrows():
         player = row['Player']
@@ -67,7 +74,7 @@ def update_leaderboard(df, leaderboard):
             position = "DNS"
         else:
             score = round(row['Normalized'] + row['F1_bonus'], 2)
-            position = submitters_df[submitters_df['Player'] == player].index[0] + 1
+            position = rank_map[player]
 
         if player not in leaderboard:
             leaderboard[player] = create_player_record()
@@ -82,7 +89,7 @@ def update_leaderboard(df, leaderboard):
                 leaderboard[player]['Wins'] += 1
             if position <= 3:
                 leaderboard[player]['Podiums'] += 1
-            if position > len(submitters_df) - 3:
+            if position >= submitters_df['Rank'].max() - 2:
                 leaderboard[player]['Bottom3'] += 1
 
     return leaderboard
